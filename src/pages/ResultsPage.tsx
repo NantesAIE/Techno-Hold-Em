@@ -19,7 +19,7 @@ function ScoreBar({ score, color }: { score: number; color: string }) {
 
 export default function ResultsPage() {
   const { state, dispatch } = useApp();
-  const { scores, selectedActions, project } = state;
+  const { scores, selectedActions } = state;
 
   if (!scores) return null;
 
@@ -27,11 +27,10 @@ export default function ResultsPage() {
 
   return (
     <main className="page animate-in" style={styles.page}>
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      {/* ── Global score ─────────────────────────────────────────────────────── */}
       <div style={styles.projectHeader}>
         <div style={styles.projectMeta}>
-          <span style={styles.projectName}>{project.name}</span>
-          <span style={styles.projectDetail}>{project.sector} · {project.nature}</span>
+          <span style={styles.assessmentLabel}>Assessment TechnoVision 2026</span>
         </div>
         <div style={styles.globalScore}>
           <span style={{ ...styles.globalScoreNum, color: globalInfo.color }}>{scores.globalScore}</span>
@@ -177,15 +176,12 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: 4,
   },
-  projectName: {
-    fontSize: 22,
-    fontWeight: 800,
-    color: '#FFFFFF',
-    lineHeight: 1.2,
-  },
-  projectDetail: {
+  assessmentLabel: {
     fontSize: 13,
+    fontWeight: 600,
     color: 'rgba(255,255,255,0.45)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
   },
   globalScore: {
     display: 'flex',

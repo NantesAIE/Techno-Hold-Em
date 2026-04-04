@@ -1,5 +1,5 @@
-import { QUESTIONS } from '../data/questions';
 import { TRENDS, CONTAINERS, getContainer } from '../data/technovision2026';
+import type { Question, Dimension } from '../data/questions';
 
 export interface DimensionScores {
   foundations: number; // 0–100
@@ -22,8 +22,8 @@ export interface ScoreResult {
   dimensions: DimensionScores;
   trendScores: TrendScore[];
   globalScore: number; // 0–100
-  forces: string[];        // trend names with score > 66
-  underTension: string[];  // trend names with score < 33
+  forces: string[];        // trend names with score >= 67
+  underTension: string[];  // trend names with score < 34
   balanceLabel: ScoreLabel;
 }
 
@@ -33,40 +33,54 @@ function getLabel(score: number): ScoreLabel {
   return 'Sous tension';
 }
 
-export function computeScores(answers: number[], selectedTrendIds: string[]): ScoreResult {
-  // ── Compute raw dimension scores ────────────────────────────────────────
-  const foundationQuestions = QUESTIONS.filter(q => q.dimension === 'Foundations');
-  const executionQuestions = QUESTIONS.filter(q => q.dimension === 'Execution');
-  const balanceQuestions = QUESTIONS.filter(q => q.dimension === 'Balance');
+function dimensionScore(
+  qs: Question[],
+  dim: Dimension,
+  answers: number[],
+  allQuestions: Question[],
+  fallback: number,
+): number {
+  const relevant = qs.filter(q => q.dimension === dim);
+  if (relevant.length === 0) return fallback;
+  const sum = relevant.reduce((acc, q) => {
+    const idx = allQuestions.indexOf(q);
+    return acc + (answers[idx] ?? 0);
+  }, 0);
+  return Math.round((sum / (relevant.length * 3)) * 100);
+}
 
-  const sumForDimension = (qs: typeof QUESTIONS) =>
-    qs.reduce((acc, q) => {
-      const idx = QUESTIONS.indexOf(q);
-      return acc + (answers[idx] ?? 0);
-    }, 0);
-
-  const maxForDimension = (qs: typeof QUESTIONS) => qs.length * 3;
-
-  const rawFoundations = sumForDimension(foundationQuestions);
-  const rawExecution = sumForDimension(executionQuestions);
-  const rawBalance = sumForDimension(balanceQuestions);
-
+export function computeScores(
+  answers: number[],
+  selectedTrendIds: string[],
+  questions: Question[],
+): ScoreResult {
+  // ── Global dimension scores (all questions) ──────────────────────────────
   const dimensions: DimensionScores = {
-    foundations: Math.round((rawFoundations / maxForDimension(foundationQuestions)) * 100),
-    execution: Math.round((rawExecution / maxForDimension(executionQuestions)) * 100),
-    balance: Math.round((rawBalance / maxForDimension(balanceQuestions)) * 100),
+    foundations: dimensionScore(questions, 'foundations', answers, questions, 50),
+    execution:   dimensionScore(questions, 'execution',   answers, questions, 50),
+    balance:     dimensionScore(questions, 'balance',     answers, questions, 50),
   };
 
-  // ── Compute per-trend scores ─────────────────────────────────────────────
+  // ── Per-trend scores (questions targeting each trend) ────────────────────
   const trendScores: TrendScore[] = selectedTrendIds.map(trendId => {
     const trend = TRENDS.find(t => t.id === trendId);
     const container = trend ? getContainer(trend.containerId) : CONTAINERS[0];
     const w = container.dimensionWeights;
 
+    // Questions that specifically target this trend
+    const trendQs = questions.filter(q => q.targetTrendIds.includes(trendId));
+
+    // Per-trend dimension scores (fall back to global if no questions for that dim)
+    const trendDims: DimensionScores = {
+      foundations: dimensionScore(trendQs, 'foundations', answers, questions, dimensions.foundations),
+      execution:   dimensionScore(trendQs, 'execution',   answers, questions, dimensions.execution),
+      balance:     dimensionScore(trendQs, 'balance',     answers, questions, dimensions.balance),
+    };
+
     const globalScore = Math.round(
-      dimensions.foundations * w.foundations +
-      dimensions.execution * w.execution +
-      dimensions.balance * w.balance
+      trendDims.foundations * w.foundations +
+      trendDims.execution   * w.execution +
+      trendDims.balance     * w.balance,
     );
 
     return {
@@ -79,13 +93,12 @@ export function computeScores(answers: number[], selectedTrendIds: string[]): Sc
     };
   });
 
-  // ── Compute overall global score ─────────────────────────────────────────
+  // ── Overall global score ─────────────────────────────────────────────────
   const globalScore =
     trendScores.length > 0
       ? Math.round(trendScores.reduce((s, t) => s + t.globalScore, 0) / trendScores.length)
       : 0;
 
-  // ── Forces / under tension ───────────────────────────────────────────────
   const forces = trendScores.filter(t => t.globalScore >= 67).map(t => t.trendName);
   const underTension = trendScores.filter(t => t.globalScore < 34).map(t => t.trendName);
 
@@ -101,6 +114,6 @@ export function computeScores(answers: number[], selectedTrendIds: string[]): Sc
 
 export function getWeakestDimensions(dimensions: DimensionScores): Array<keyof DimensionScores> {
   return (Object.keys(dimensions) as Array<keyof DimensionScores>).sort(
-    (a, b) => dimensions[a] - dimensions[b]
+    (a, b) => dimensions[a] - dimensions[b],
   );
 }

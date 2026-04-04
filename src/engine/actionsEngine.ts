@@ -12,12 +12,6 @@ export interface SelectedAction {
   targetDimension: Dimension;
 }
 
-const DIMENSION_KEY_TO_LABEL: Record<keyof DimensionScores, Dimension> = {
-  foundations: 'Foundations',
-  execution: 'Execution',
-  balance: 'Balance',
-};
-
 export function selectActions(
   dimensions: DimensionScores,
   selectedTrendIds: string[]
@@ -30,11 +24,11 @@ export function selectActions(
   // Weakest dimension gets 2 actions, medium gets 1
   const targetDimensions: Dimension[] = [];
   if (sortedKeys.length >= 1) {
-    targetDimensions.push(DIMENSION_KEY_TO_LABEL[sortedKeys[0]]);
-    targetDimensions.push(DIMENSION_KEY_TO_LABEL[sortedKeys[0]]);
+    targetDimensions.push(sortedKeys[0]);
+    targetDimensions.push(sortedKeys[0]);
   }
   if (sortedKeys.length >= 2) {
-    targetDimensions.push(DIMENSION_KEY_TO_LABEL[sortedKeys[1]]);
+    targetDimensions.push(sortedKeys[1]);
   }
 
   const selectedIds = new Set<string>();

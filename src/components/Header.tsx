@@ -3,14 +3,13 @@ import { useApp } from '../store/AppContext';
 import type { Step } from '../store/types';
 
 const STEP_TITLES: Partial<Record<Step, string>> = {
-  setup: 'Votre projet',
   trends: 'Sélection des trends',
   game: 'Assessment',
   results: 'Résultats',
   email: 'Envoyer les résultats',
 };
 
-const STEP_ORDER: Step[] = ['home', 'setup', 'trends', 'game', 'results', 'email'];
+const STEP_ORDER: Step[] = ['home', 'trends', 'game', 'results', 'email'];
 
 export default function Header() {
   const { state, dispatch } = useApp();
@@ -19,7 +18,8 @@ export default function Header() {
   if (step === 'home') return null;
 
   const currentIdx = STEP_ORDER.indexOf(step);
-  const canGoBack = currentIdx > 1 && step !== 'results'; // can't go back from results
+  // Allow back from game → trends, email → results; not from trends → home or results
+  const canGoBack = currentIdx > 1 && step !== 'results';
 
   function handleBack() {
     const prev = STEP_ORDER[currentIdx - 1];

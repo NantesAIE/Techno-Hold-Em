@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useApp } from '../store/AppContext';
 import { CONTAINERS, TRENDS, getContainer } from '../data/technovision2026';
+import { TECHNOVISION_TREND_TOOLTIPS } from '../data/TechnoVisionTooltips';
+import TrendTooltip from '../components/TrendTooltip';
+import { selectQuestions } from '../data/questions';
 
 const MIN_TRENDS = 3;
 const MAX_TRENDS = 5;
@@ -8,6 +11,7 @@ const MAX_TRENDS = 5;
 export default function TrendSelection() {
   const { state, dispatch } = useApp();
   const [selected, setSelected] = useState<Set<string>>(new Set(state.selectedTrends));
+  const [openTooltip, setOpenTooltip] = useState<string | null>(null);
 
   const hasBalanceByDesign = [...selected].some(id => {
     const t = TRENDS.find(tr => tr.id === id);
@@ -21,7 +25,6 @@ export default function TrendSelection() {
     setSelected(prev => {
       const trend = TRENDS.find(t => t.id === trendId);
       if (prev.has(trendId)) {
-        // Prevent deselecting the last Balance by Design trend
         if (trend?.containerId === 'balance-by-design') {
           const balanceCount = [...prev].filter(id => {
             const t = TRENDS.find(tr => tr.id === id);
@@ -43,11 +46,22 @@ export default function TrendSelection() {
   }
 
   function handleConfirm() {
-    dispatch({ type: 'SET_TRENDS', payload: [...selected] });
+    const trendIds = [...selected];
+    const questions = selectQuestions({
+      selectedTrendIds: trendIds,
+      seed: 'technovision2026',
+      maxQuestions: 10,
+      perTrend: 2,
+    });
+    dispatch({ type: 'SET_TRENDS', payload: trendIds });
+    dispatch({ type: 'SET_QUESTIONS', payload: questions });
     dispatch({ type: 'GO_TO_STEP', payload: 'game' });
   }
 
   const countColor = canProceed ? '#4CAF50' : count >= 3 ? '#FF9800' : '#12ABDB';
+
+  // Data for the currently open tooltip
+  const tooltipTrend = openTooltip ? TRENDS.find(t => t.id === openTooltip) : null;
 
   return (
     <main className="page animate-in" style={{ paddingBottom: 40 }}>
@@ -63,14 +77,9 @@ export default function TrendSelection() {
 
       {/* Hand summary bar */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        background: 'rgba(18,171,219,0.07)',
-        border: '1px solid rgba(18,171,219,0.2)',
-        borderRadius: 10,
-        padding: '10px 16px',
-        marginBottom: 12,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: 'rgba(18,171,219,0.07)', border: '1px solid rgba(18,171,219,0.2)',
+        borderRadius: 10, padding: '10px 16px', marginBottom: 12,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.4)' }}>
@@ -129,36 +138,65 @@ export default function TrendSelection() {
                   }}>Requis</span>
                 )}
               </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {containerTrends.map(trend => {
                   const isSelected = selected.has(trend.id);
                   const isDisabled = !isSelected && count >= MAX_TRENDS;
+                  const hasTooltip = !!TECHNOVISION_TREND_TOOLTIPS[trend.id];
 
                   return (
-                    <button
-                      key={trend.id}
-                      onClick={() => !isDisabled && toggle(trend.id)}
-                      aria-pressed={isSelected}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '10px 12px', minHeight: 44,
-                        background: isSelected ? `${container.accentColor}18` : 'rgba(255,255,255,0.04)',
-                        border: isSelected ? `2px solid ${container.accentColor}` : '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: 8, cursor: isDisabled ? 'not-allowed' : 'pointer',
-                        textAlign: 'left', transition: 'all 150ms',
-                        WebkitTapHighlightColor: 'transparent',
-                        opacity: isDisabled ? 0.35 : 1,
-                        color: isSelected ? container.accentColor : 'rgba(255,255,255,0.8)',
-                        width: '100%',
-                      }}
-                    >
-                      {isSelected && (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ flexShrink: 0 }}>
-                          <path d="M20 6 9 17l-5-5" />
-                        </svg>
+                    <div key={trend.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {/* Trend selection button */}
+                      <button
+                        onClick={() => !isDisabled && toggle(trend.id)}
+                        aria-pressed={isSelected}
+                        style={{
+                          flex: 1,
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '10px 12px', minHeight: 44,
+                          background: isSelected ? `${container.accentColor}18` : 'rgba(255,255,255,0.04)',
+                          border: isSelected ? `2px solid ${container.accentColor}` : '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: 8, cursor: isDisabled ? 'not-allowed' : 'pointer',
+                          textAlign: 'left', transition: 'all 150ms',
+                          WebkitTapHighlightColor: 'transparent',
+                          opacity: isDisabled ? 0.35 : 1,
+                          color: isSelected ? container.accentColor : 'rgba(255,255,255,0.8)',
+                        }}
+                      >
+                        {isSelected && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ flexShrink: 0 }}>
+                            <path d="M20 6 9 17l-5-5" />
+                          </svg>
+                        )}
+                        <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3 }}>{trend.name}</span>
+                      </button>
+
+                      {/* Info button */}
+                      {hasTooltip && (
+                        <button
+                          onClick={() => setOpenTooltip(trend.id)}
+                          aria-label={`En savoir plus sur ${trend.name}`}
+                          style={{
+                            flexShrink: 0,
+                            width: 28, height: 28,
+                            borderRadius: '50%',
+                            border: `1px solid rgba(255,255,255,0.18)`,
+                            background: 'rgba(255,255,255,0.06)',
+                            color: 'rgba(255,255,255,0.45)',
+                            cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 12, fontWeight: 700, fontStyle: 'italic',
+                            fontFamily: 'Georgia, serif',
+                            transition: 'all 150ms',
+                            WebkitTapHighlightColor: 'transparent',
+                            lineHeight: 1,
+                          }}
+                        >
+                          i
+                        </button>
                       )}
-                      <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3 }}>{trend.name}</span>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -194,6 +232,17 @@ export default function TrendSelection() {
           </p>
         )}
       </div>
+
+      {/* Tooltip modal */}
+      {openTooltip && tooltipTrend && (
+        <TrendTooltip
+          trendId={openTooltip}
+          trendName={tooltipTrend.name}
+          containerId={tooltipTrend.containerId}
+          description={TECHNOVISION_TREND_TOOLTIPS[openTooltip] ?? ''}
+          onClose={() => setOpenTooltip(null)}
+        />
+      )}
     </main>
   );
 }

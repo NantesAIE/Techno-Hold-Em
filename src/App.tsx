@@ -1,7 +1,6 @@
 import { AppProvider, useApp } from './store/AppContext';
 import Header from './components/Header';
-import Home from './pages/Home';
-import ProjectSetup from './pages/ProjectSetup';
+import IntroTechnoVision from './pages/IntroTechnoVision';
 import TrendSelection from './pages/TrendSelection';
 import GamePage from './pages/GamePage';
 import ResultsPage from './pages/ResultsPage';
@@ -11,13 +10,12 @@ function Router() {
   const { state } = useApp();
 
   switch (state.step) {
-    case 'home':    return <Home />;
-    case 'setup':   return <ProjectSetup />;
+    case 'home':    return <IntroTechnoVision />;
     case 'trends':  return <TrendSelection />;
     case 'game':    return <GamePage />;
     case 'results': return <ResultsPage />;
     case 'email':   return <EmailPage />;
-    default:        return <Home />;
+    default:        return <IntroTechnoVision />;
   }
 }
 
