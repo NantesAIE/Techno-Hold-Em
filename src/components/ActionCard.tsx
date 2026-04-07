@@ -1,4 +1,5 @@
 import React from 'react';
+import { useT } from '../i18n';
 import type { SelectedAction } from '../engine/actionsEngine';
 
 interface Props {
@@ -7,20 +8,16 @@ interface Props {
 }
 
 const DIMENSION_COLORS: Record<string, string> = {
-  Foundations: '#FF9800',
-  Execution: '#12ABDB',
-  Balance: '#12ABDB',
-};
-
-const DIMENSION_LABELS: Record<string, string> = {
-  Foundations: 'Fondations',
-  Execution: 'Exécution',
-  Balance: 'Balance by Design',
+  foundations: '#FF9800',
+  execution:   '#12ABDB',
+  balance:     '#12ABDB',
 };
 
 export default function ActionCard({ action, index }: Props) {
+  const t = useT();
   const color = DIMENSION_COLORS[action.targetDimension] ?? '#12ABDB';
-  const dimLabel = DIMENSION_LABELS[action.targetDimension] ?? action.targetDimension;
+  const dimLabel = t.actionCard.dimensions[action.targetDimension as keyof typeof t.actionCard.dimensions]
+    ?? action.targetDimension;
 
   return (
     <div className="card animate-in" style={{ ...styles.card, animationDelay: `${index * 80}ms`, borderLeft: `3px solid ${color}` }}>
@@ -46,7 +43,7 @@ export default function ActionCard({ action, index }: Props) {
 
       {action.impactedTrendNames.length > 0 && (
         <div style={styles.trends}>
-          <span style={styles.trendsLabel}>Trends impactées</span>
+          <span style={styles.trendsLabel}>{t.actionCard.trendsLabel}</span>
           <div style={styles.trendsList}>
             {action.impactedTrendNames.map(name => (
               <span key={name} style={styles.trendChip}>{name}</span>

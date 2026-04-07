@@ -1,25 +1,26 @@
 import React from 'react';
 import { useApp } from '../store/AppContext';
+import { useT } from '../i18n';
 import type { Step } from '../store/types';
 
-const STEP_TITLES: Partial<Record<Step, string>> = {
-  setup: 'Votre projet',
-  trends: 'Sélection des trends',
-  game: 'Assessment',
-  results: 'Résultats',
-  email: 'Envoyer les résultats',
-};
-
-const STEP_ORDER: Step[] = ['home', 'setup', 'trends', 'game', 'results', 'email'];
+const STEP_ORDER: Step[] = ['home', 'trends', 'game', 'results', 'email'];
 
 export default function Header() {
   const { state, dispatch } = useApp();
+  const t = useT();
   const { step } = state;
 
-  if (step === 'home') return null;
+  if (step === 'landing' || step === 'home') return null;
+
+  const stepTitles: Partial<Record<Step, string>> = {
+    trends: t.header.steps.trends,
+    game:   t.header.steps.game,
+    results: t.header.steps.results,
+  };
 
   const currentIdx = STEP_ORDER.indexOf(step);
-  const canGoBack = currentIdx > 1 && step !== 'results'; // can't go back from results
+  // Allow back from game → trends, email → results; not from trends → home or results
+  const canGoBack = currentIdx > 1 && step !== 'results';
 
   function handleBack() {
     const prev = STEP_ORDER[currentIdx - 1];
@@ -31,7 +32,7 @@ export default function Header() {
       <div style={styles.inner}>
         <div style={styles.left}>
           {canGoBack && (
-            <button style={styles.backBtn} onClick={handleBack} aria-label="Retour">
+            <button style={styles.backBtn} onClick={handleBack} aria-label={t.header.backAriaLabel}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M19 12H5M12 5l-7 7 7 7" />
               </svg>
@@ -44,14 +45,14 @@ export default function Header() {
         </div>
 
         <div style={styles.right}>
-          {STEP_TITLES[step] && (
-            <span style={styles.stepTitle}>{STEP_TITLES[step]}</span>
+          {stepTitles[step] && (
+            <span style={styles.stepTitle}>{stepTitles[step]}</span>
           )}
           {step !== 'results' && step !== 'email' && (
             <button
               style={styles.resetBtn}
               onClick={() => dispatch({ type: 'RESET' })}
-              aria-label="Recommencer"
+              aria-label={t.header.resetAriaLabel}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />

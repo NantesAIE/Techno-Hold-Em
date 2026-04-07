@@ -6,9 +6,6 @@ import type { SelectedAction } from '../engine/actionsEngine';
 const CC_EMAIL = 'aie_nantes.fr@capgemini.com';
 
 function buildEmailBody(
-  projectName: string,
-  sector: string,
-  nature: string,
   scores: ScoreResult,
   actions: SelectedAction[]
 ): string {
@@ -23,9 +20,6 @@ function buildEmailBody(
     .join('\n\n');
 
   return `=== RÉSULTATS TECHNO HOLD 'EM – TECHNOVISION 2026 ===
-
-PROJET : ${projectName}
-Secteur : ${sector} | Nature : ${nature}
 
 ─── SCORE GLOBAL : ${scores.globalScore}/100 ────────────────────
 
@@ -54,19 +48,13 @@ export default function EmailPage() {
   const [email, setEmail] = useState(state.email);
   const [copied, setCopied] = useState(false);
 
-  const { scores, selectedActions, project } = state;
+  const { scores, selectedActions } = state;
 
   if (!scores) return null;
 
-  const body = buildEmailBody(
-    project.name,
-    project.sector,
-    project.nature,
-    scores,
-    selectedActions
-  );
+  const body = buildEmailBody(scores, selectedActions);
 
-  const subject = encodeURIComponent(`Résultats Techno Hold 'Em – ${project.name}`);
+  const subject = encodeURIComponent(`Résultats Techno Hold 'Em – TechnoVision 2026`);
   const encodedBody = encodeURIComponent(body);
   const encodedCC = encodeURIComponent(CC_EMAIL);
 

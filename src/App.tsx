@@ -1,31 +1,49 @@
 import { AppProvider, useApp } from './store/AppContext';
+import { LanguageProvider } from './i18n';
 import Header from './components/Header';
-import Home from './pages/Home';
-import ProjectSetup from './pages/ProjectSetup';
+import Landing from './pages/Landing';
+import IntroTechnoVision from './pages/IntroTechnoVision';
 import TrendSelection from './pages/TrendSelection';
 import GamePage from './pages/GamePage';
 import ResultsPage from './pages/ResultsPage';
-import EmailPage from './pages/EmailPage';
+import ResultShare from './pages/ResultShare';
+import { decodeSharePayload } from './utils/sharePayload';
 
 function Router() {
   const { state } = useApp();
 
   switch (state.step) {
-    case 'home':    return <Home />;
-    case 'setup':   return <ProjectSetup />;
-    case 'trends':  return <TrendSelection />;
-    case 'game':    return <GamePage />;
-    case 'results': return <ResultsPage />;
-    case 'email':   return <EmailPage />;
-    default:        return <Home />;
+    case 'landing':  return <Landing />;
+    case 'home':     return <IntroTechnoVision />;
+    case 'trends':   return <TrendSelection />;
+    case 'game':     return <GamePage />;
+    case 'results':  return <ResultsPage />;
+    default:         return <Landing />;
   }
 }
 
 export default function App() {
+  // When the app is opened via QR code, the URL contains ?data=...
+  // In that case bypass the normal flow and render the mobile share page.
+  const params = new URLSearchParams(window.location.search);
+  const sharedData = params.get('data');
+
+  if (sharedData) {
+    // Peek at the payload lang without full validation — ResultShare will re-decode
+    const peekLang = decodeSharePayload(sharedData)?.lg ?? 'fr';
+    return (
+      <LanguageProvider initialLang={peekLang}>
+        <ResultShare encodedData={sharedData} />
+      </LanguageProvider>
+    );
+  }
+
   return (
-    <AppProvider>
-      <Header />
-      <Router />
-    </AppProvider>
+    <LanguageProvider>
+      <AppProvider>
+        <Header />
+        <Router />
+      </AppProvider>
+    </LanguageProvider>
   );
 }

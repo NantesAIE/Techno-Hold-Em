@@ -7,11 +7,11 @@ function reducer(state: AppState, action: AppAction): AppState {
     case 'GO_TO_STEP':
       return { ...state, step: action.payload };
 
-    case 'SET_PROJECT':
-      return { ...state, project: action.payload };
-
     case 'SET_TRENDS':
       return { ...state, selectedTrends: action.payload };
+
+    case 'SET_QUESTIONS':
+      return { ...state, questions: action.payload, answers: [] };
 
     case 'SET_ANSWER': {
       const answers = [...state.answers];

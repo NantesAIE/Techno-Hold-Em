@@ -1,7 +1,9 @@
 import { ACTION_TEMPLATES, type ActionTemplate } from '../data/actionTemplates';
+import { ACTION_TEMPLATES_EN } from '../data/actionTemplates.en';
 import { TRENDS } from '../data/technovision2026';
 import type { DimensionScores } from './scoring';
 import type { Dimension } from '../data/questions';
+import type { Lang } from '../i18n/types';
 
 export interface SelectedAction {
   id: string;
@@ -12,16 +14,13 @@ export interface SelectedAction {
   targetDimension: Dimension;
 }
 
-const DIMENSION_KEY_TO_LABEL: Record<keyof DimensionScores, Dimension> = {
-  foundations: 'Foundations',
-  execution: 'Execution',
-  balance: 'Balance',
-};
-
 export function selectActions(
   dimensions: DimensionScores,
-  selectedTrendIds: string[]
+  selectedTrendIds: string[],
+  lang: Lang = 'fr',
 ): SelectedAction[] {
+  const templates =
+    lang === 'en' && ACTION_TEMPLATES_EN.length > 0 ? ACTION_TEMPLATES_EN : ACTION_TEMPLATES;
   // Sort dimension keys from weakest to strongest
   const sortedKeys = (Object.keys(dimensions) as Array<keyof DimensionScores>).sort(
     (a, b) => dimensions[a] - dimensions[b]
@@ -30,11 +29,11 @@ export function selectActions(
   // Weakest dimension gets 2 actions, medium gets 1
   const targetDimensions: Dimension[] = [];
   if (sortedKeys.length >= 1) {
-    targetDimensions.push(DIMENSION_KEY_TO_LABEL[sortedKeys[0]]);
-    targetDimensions.push(DIMENSION_KEY_TO_LABEL[sortedKeys[0]]);
+    targetDimensions.push(sortedKeys[0]);
+    targetDimensions.push(sortedKeys[0]);
   }
   if (sortedKeys.length >= 2) {
-    targetDimensions.push(DIMENSION_KEY_TO_LABEL[sortedKeys[1]]);
+    targetDimensions.push(sortedKeys[1]);
   }
 
   const selectedIds = new Set<string>();
@@ -42,7 +41,7 @@ export function selectActions(
 
   for (const dim of targetDimensions) {
     if (result.length >= 3) break;
-    const candidate = ACTION_TEMPLATES.find(
+    const candidate = templates.find(
       a => a.targetDimension === dim && !selectedIds.has(a.id)
     );
     if (candidate) {
@@ -52,7 +51,7 @@ export function selectActions(
   }
 
   // Fill up to 3 if needed
-  for (const template of ACTION_TEMPLATES) {
+  for (const template of templates) {
     if (result.length >= 3) break;
     if (!selectedIds.has(template.id)) {
       selectedIds.add(template.id);
