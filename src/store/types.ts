@@ -2,7 +2,7 @@ import type { ScoreResult } from '../engine/scoring';
 import type { SelectedAction } from '../engine/actionsEngine';
 import type { Question } from '../data/questions';
 
-export type Step = 'home' | 'trends' | 'game' | 'results' | 'email';
+export type Step = 'landing' | 'home' | 'trends' | 'game' | 'results' | 'email';
 
 export interface AppState {
   step: Step;
@@ -24,7 +24,7 @@ export type AppAction =
   | { type: 'RESET' };
 
 export const INITIAL_STATE: AppState = {
-  step: 'home',
+  step: 'landing',
   questions: [],
   selectedTrends: [],
   answers: [],

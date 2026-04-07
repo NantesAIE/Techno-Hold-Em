@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../store/AppContext';
+import { useT, useLang } from '../i18n';
 import { computeScores } from '../engine/scoring';
 import { selectActions } from '../engine/actionsEngine';
 import { TRENDS, getContainer } from '../data/technovision2026';
@@ -12,14 +13,10 @@ function getRound(idx: number, total: number): Round {
   return 'RIVER';
 }
 
-const ROUND_LABELS: Record<Round, string> = {
-  FLOP: 'Mise de départ — clarté & fondations',
-  TURN: 'Relance — exécution & maturité',
-  RIVER: 'Carte finale — équilibre & contrôle',
-};
-
 export default function GamePage() {
   const { state, dispatch } = useApp();
+  const t = useT();
+  const [lang] = useLang();
   const questions = state.questions;
   const [currentIdx, setCurrentIdx] = useState(0);
   const [chosen, setChosen] = useState<number | null>(null);
@@ -32,7 +29,7 @@ export default function GamePage() {
 
   // Trend & container metadata for the current question
   const primaryTrendId = question?.targetTrendIds[0];
-  const trend = primaryTrendId ? TRENDS.find(t => t.id === primaryTrendId) : null;
+  const trend = primaryTrendId ? TRENDS.find(tr => tr.id === primaryTrendId) : null;
   const container = trend ? getContainer(trend.containerId) : null;
 
   const round = getRound(currentIdx, total);
@@ -55,7 +52,7 @@ export default function GamePage() {
     setTimeout(() => {
       if (isLast) {
         const scores = computeScores(updatedAnswers, state.selectedTrends, questions);
-        const actions = selectActions(scores.dimensions, state.selectedTrends);
+        const actions = selectActions(scores.dimensions, state.selectedTrends, lang);
         dispatch({ type: 'SET_RESULTS', payload: { scores, actions } });
         dispatch({ type: 'GO_TO_STEP', payload: 'results' });
       } else {
@@ -75,7 +72,7 @@ export default function GamePage() {
 
         {/* Round label */}
         <div style={styles.roundInfo}>
-          <span style={styles.roundLabel}>{ROUND_LABELS[round]}</span>
+          <span style={styles.roundLabel}>{t.game.rounds[round]}</span>
         </div>
 
         {/* Trend & container badges */}
@@ -114,7 +111,7 @@ export default function GamePage() {
               aria-expanded={showWhy}
             >
               <span style={styles.whyIcon}>?</span>
-              Pourquoi cette question ?
+              {t.game.whyBtn}
             </button>
             {showWhy && (
               <p style={styles.whyText}>{question.whyItMatters}</p>
@@ -156,7 +153,7 @@ export default function GamePage() {
 
         {/* Score legend */}
         <p style={styles.legend}>
-          0 = Non adressé · 1 = Partiel · 2 = En cours · 3 = Complet
+          {t.game.legend}
         </p>
       </div>
     </main>

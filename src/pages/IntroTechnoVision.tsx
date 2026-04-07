@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../store/AppContext';
+import { useT } from '../i18n';
 
 // ── Animated SVG background ─────────────────────────────────────────────────
 function SyncSwingSVG() {
@@ -82,6 +83,10 @@ function SyncSwingSVG() {
 // ── Main component ───────────────────────────────────────────────────────────
 export default function IntroTechnoVision() {
   const { dispatch } = useApp();
+  const t = useT();
+
+  // Split titleSub on the {accent} placeholder to wrap the accent part
+  const [before, after] = t.intro.titleSub.split('{accent}');
 
   return (
     <div style={styles.page}>
@@ -92,7 +97,7 @@ export default function IntroTechnoVision() {
 
           {/* Badge */}
           <div style={styles.badge} className="animate-in animate-delay-1">
-            The Sync Swing · TechnoVision 2026
+            {t.intro.badge}
           </div>
 
           {/* Hero title */}
@@ -101,12 +106,12 @@ export default function IntroTechnoVision() {
               TechnoVision 2026
             </h1>
             <h2 style={styles.titleSub}>
-              Donner du sens au{' '}
-              <span style={styles.accent}>mouvement technologique</span>
+              {before}
+              <span style={styles.accent}>{t.intro.titleAccent}</span>
+              {after}
             </h2>
             <p style={styles.subtitle}>
-              Dans un monde en oscillation permanente, l'enjeu n'est pas de choisir une technologie,
-              mais de comprendre comment les tendances se synchronisent.
+              {t.intro.subtitle}
             </p>
           </div>
 
@@ -115,37 +120,27 @@ export default function IntroTechnoVision() {
             <div className="card" style={styles.card}>
               <div style={styles.cardLabel}>
                 <span style={styles.cardDot} />
-                Qu'est-ce que TechnoVision ?
+                {t.intro.card1Label}
               </div>
               <p style={styles.cardText}>
-                TechnoVision est le framework technologique de Capgemini.
-                Il structure 37 trends en 9 containers pour aider les organisations
-                à distinguer le signal du bruit et à transformer l'innovation
-                en décisions concrètes.
+                {t.intro.card1Text}
               </p>
             </div>
             <div className="card" style={styles.card}>
               <div style={styles.cardLabel}>
                 <span style={styles.cardDot} />
-                Pourquoi cet assessment ?
+                {t.intro.card2Label}
               </div>
               <p style={styles.cardText}>
-                Cet assessment vous permet de positionner un projet réel
-                par rapport aux tendances TechnoVision 2026.
-                En quelques minutes, vous identifiez vos forces, vos zones de tension
-                et les leviers prioritaires pour progresser.
+                {t.intro.card2Text}
               </p>
             </div>
           </div>
 
           {/* Deliverables */}
           <div style={styles.deliverables} className="animate-in animate-delay-4">
-            <div style={styles.delLabel}>Ce que vous allez obtenir</div>
-            {[
-              'Un positionnement clair sur les trends clés',
-              'Une lecture équilibre / exécution / fondations',
-              '3 actions concrètes pour renforcer votre trajectoire',
-            ].map((item, i) => (
+            <div style={styles.delLabel}>{t.intro.delLabel}</div>
+            {t.intro.deliverables.map((item, i) => (
               <div key={i} style={styles.delItem}>
                 <span style={styles.delCheck}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
@@ -164,17 +159,17 @@ export default function IntroTechnoVision() {
               style={styles.cta}
               onClick={() => dispatch({ type: 'GO_TO_STEP', payload: 'trends' })}
             >
-              Explorer les trends TechnoVision
+              {t.intro.cta}
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </button>
-            <p style={styles.duration}>5 – 7 minutes · Aucun compte requis</p>
+            <p style={styles.duration}>{t.intro.duration}</p>
           </div>
 
           {/* Footer */}
           <p style={styles.footer} className="animate-in animate-delay-6">
-            Basé sur TechnoVision 2026 — The Sync Swing · Capgemini
+            {t.intro.footer}
           </p>
 
         </div>

@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useApp } from '../store/AppContext';
+import { useT, useLang } from '../i18n';
 import RadarChart from '../components/RadarChart';
 import ActionCard from '../components/ActionCard';
+import QRCodeBlock from '../components/QRCodeBlock';
+import { buildSharePayload, buildShareUrl } from '../utils/sharePayload';
 
-function scoreLabel(score: number): { label: string; color: string } {
-  if (score >= 67) return { label: 'Bien positionné', color: '#4CAF50' };
-  if (score >= 34) return { label: 'Prometteur mais fragile', color: '#FF9800' };
-  return { label: 'Sous tension', color: '#F44336' };
+function scoreLabel(score: number, t: ReturnType<typeof useT>): { label: string; color: string } {
+  if (score >= 67) return { label: t.results.scoreLabels.good,    color: '#4CAF50' };
+  if (score >= 34) return { label: t.results.scoreLabels.fragile, color: '#FF9800' };
+  return             { label: t.results.scoreLabels.tension,      color: '#F44336' };
 }
 
 function ScoreBar({ score, color }: { score: number; color: string }) {
@@ -19,18 +22,34 @@ function ScoreBar({ score, color }: { score: number; color: string }) {
 
 export default function ResultsPage() {
   const { state, dispatch } = useApp();
+  const t = useT();
+  const [lang] = useLang();
   const { scores, selectedActions } = state;
 
   if (!scores) return null;
 
-  const globalInfo = scoreLabel(scores.globalScore);
+  // Build share URL once (stable reference via useMemo)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const shareUrl = useMemo(
+    () => buildShareUrl(buildSharePayload(scores, selectedActions, lang)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const globalInfo = scoreLabel(scores.globalScore, t);
+
+  const dimLabels: Record<string, string> = {
+    foundations: t.results.dimensions.foundations,
+    execution:   t.results.dimensions.execution,
+    balance:     t.results.dimensions.balance,
+  };
 
   return (
     <main className="page animate-in" style={styles.page}>
       {/* ── Global score ─────────────────────────────────────────────────────── */}
       <div style={styles.projectHeader}>
         <div style={styles.projectMeta}>
-          <span style={styles.assessmentLabel}>Assessment TechnoVision 2026</span>
+          <span style={styles.assessmentLabel}>{t.results.assessmentLabel}</span>
         </div>
         <div style={styles.globalScore}>
           <span style={{ ...styles.globalScoreNum, color: globalInfo.color }}>{scores.globalScore}</span>
@@ -44,17 +63,16 @@ export default function ResultsPage() {
 
       {/* ── Radar ───────────────────────────────────────────────────────────── */}
       <section style={styles.section}>
-        <h3 style={styles.sectionTitle}>Radar de positionnement</h3>
+        <h3 style={styles.sectionTitle}>{t.results.radarTitle}</h3>
         <div className="card" style={{ padding: 16 }}>
           <RadarChart scores={scores.dimensions} size={280} />
           <div style={styles.dimensionList}>
             {(['foundations', 'execution', 'balance'] as const).map(dim => {
               const dimScore = scores.dimensions[dim];
-              const info = scoreLabel(dimScore);
-              const labels: Record<string, string> = { foundations: 'Fondations', execution: 'Exécution', balance: 'Balance' };
+              const info = scoreLabel(dimScore, t);
               return (
                 <div key={dim} style={styles.dimRow}>
-                  <span style={styles.dimName}>{labels[dim]}</span>
+                  <span style={styles.dimName}>{dimLabels[dim]}</span>
                   <ScoreBar score={dimScore} color={info.color} />
                   <span style={{ ...styles.dimScore, color: info.color }}>{dimScore}</span>
                 </div>
@@ -66,10 +84,10 @@ export default function ResultsPage() {
 
       {/* ── Trend scores ────────────────────────────────────────────────────── */}
       <section style={styles.section}>
-        <h3 style={styles.sectionTitle}>Scores par trend</h3>
+        <h3 style={styles.sectionTitle}>{t.results.trendScoresTitle}</h3>
         <div style={styles.trendGrid}>
           {scores.trendScores.map(ts => {
-            const info = scoreLabel(ts.globalScore);
+            const info = scoreLabel(ts.globalScore, t);
             return (
               <div key={ts.trendId} className="card" style={{ ...styles.trendCard, borderTop: `3px solid ${ts.containerColor}` }}>
                 <div style={{ fontSize: 11, color: ts.containerColor, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
@@ -89,12 +107,12 @@ export default function ResultsPage() {
 
       {/* ── Synthesis ───────────────────────────────────────────────────────── */}
       <section style={styles.section}>
-        <h3 style={styles.sectionTitle}>Synthèse projet</h3>
+        <h3 style={styles.sectionTitle}>{t.results.synthesisTitle}</h3>
         <div style={styles.synthesisGrid}>
           {scores.forces.length > 0 && (
             <div className="card" style={{ ...styles.synthesisCard, borderLeft: '3px solid #4CAF50' }}>
               <div style={styles.synthTitle}>
-                <span style={{ color: '#4CAF50' }}>✓</span> Forces
+                <span style={{ color: '#4CAF50' }}>&#x2713;</span> {t.results.forcesTitle}
               </div>
               <ul style={styles.synthList}>
                 {scores.forces.map(f => <li key={f} style={styles.synthItem}>{f}</li>)}
@@ -104,7 +122,7 @@ export default function ResultsPage() {
           {scores.underTension.length > 0 && (
             <div className="card" style={{ ...styles.synthesisCard, borderLeft: '3px solid #F44336' }}>
               <div style={styles.synthTitle}>
-                <span style={{ color: '#F44336' }}>!</span> Sous tension
+                <span style={{ color: '#F44336' }}>!</span> {t.results.tensionTitle}
               </div>
               <ul style={styles.synthList}>
                 {scores.underTension.map(f => <li key={f} style={styles.synthItem}>{f}</li>)}
@@ -113,15 +131,15 @@ export default function ResultsPage() {
           )}
           <div className="card" style={{ ...styles.synthesisCard, borderLeft: '3px solid #12ABDB' }}>
             <div style={styles.synthTitle}>
-              <span style={{ color: '#12ABDB' }}>⚖</span> Balance by Design
+              <span style={{ color: '#12ABDB' }}>&#x2696;</span> {t.results.balanceTitle}
             </div>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)', marginTop: 6 }}>
               Score balance : <strong style={{ color: 'rgba(255,255,255,0.9)' }}>{scores.dimensions.balance}/100</strong>
-              {' — '}<span style={{ color: scoreLabel(scores.dimensions.balance).color }}>{scores.balanceLabel}</span>
+              {' — '}<span style={{ color: scoreLabel(scores.dimensions.balance, t).color }}>{scores.balanceLabel}</span>
             </p>
             {scores.dimensions.balance < 34 && (
               <p style={{ fontSize: 13, color: 'rgba(255,152,0,0.9)', marginTop: 8 }}>
-                Point d'attention : la dimension humaine et confiance est insuffisamment adressée.
+                {t.results.balanceLowWarning}
               </p>
             )}
           </div>
@@ -130,30 +148,23 @@ export default function ResultsPage() {
 
       {/* ── Actions ─────────────────────────────────────────────────────────── */}
       <section style={styles.section}>
-        <h3 style={styles.sectionTitle}>3 actions concrètes</h3>
-        <p style={styles.actionsSubtitle}>Sélectionnées selon vos dimensions les plus faibles</p>
+        <h3 style={styles.sectionTitle}>{t.results.actionsTitle}</h3>
+        <p style={styles.actionsSubtitle}>{t.results.actionsSubtitle}</p>
         {selectedActions.map((action, i) => (
           <ActionCard key={action.id} action={action} index={i} />
         ))}
       </section>
 
-      {/* ── CTAs ────────────────────────────────────────────────────────────── */}
+      {/* ── QR Code ─────────────────────────────────────────────────────────── */}
+      <QRCodeBlock url={shareUrl} />
+
+      {/* ── CTA ─────────────────────────────────────────────────────────────── */}
       <div style={styles.ctaGroup}>
-        <button
-          className="btn btn-primary btn-lg btn-full"
-          onClick={() => dispatch({ type: 'GO_TO_STEP', payload: 'email' })}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect width="20" height="16" x="2" y="4" rx="2" />
-            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-          </svg>
-          M'envoyer les résultats
-        </button>
         <button
           className="btn btn-ghost btn-full"
           onClick={() => dispatch({ type: 'RESET' })}
         >
-          Nouveau projet
+          {t.results.newAssessment}
         </button>
       </div>
     </main>

@@ -93,3 +93,13 @@ export const TECHNOVISION_TREND_TOOLTIPS: Record<string, string> = {
   'ok-qompute':
     'De nouvelles architectures de calcul repoussent les limites actuelles.',
 };
+
+import type { Lang } from '../i18n/types';
+import { TECHNOVISION_TREND_TOOLTIPS_EN } from './TechnoVisionTooltips.en';
+
+/** Returns the tooltip map for the given language, falling back to FR for missing keys. */
+export function getTechnoVisionTooltips(lang: Lang): Record<string, string> {
+  if (lang === 'fr') return TECHNOVISION_TREND_TOOLTIPS;
+  // Merge: EN overrides FR where available
+  return { ...TECHNOVISION_TREND_TOOLTIPS, ...TECHNOVISION_TREND_TOOLTIPS_EN };
+}
