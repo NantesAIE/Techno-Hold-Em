@@ -1,0 +1,41 @@
+/* ── Container card background zoom ─────────────────────────────────────── */
+
+.container-card {
+  overflow: hidden;
+  position: relative;
+}
+
+/* Pseudo-layer that carries the background image — isolated so only IT scales */
+.container-card-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center right;
+  will-change: transform;
+  transition: transform 260ms ease;
+}
+
+.container-card:hover .container-card-bg,
+.container-card:focus-within .container-card-bg {
+  transform: scale(1.03);
+}
+
+/* Gradient overlay — always present, slight brightening on hover */
+.container-card-overlay {
+  position: absolute;
+  inset: 0;
+  transition: opacity 260ms ease;
+  pointer-events: none;
+}
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .container-card-bg {
+    transition: none;
+    will-change: auto;
+  }
+
+  .container-card-overlay {
+    transition: none;
+  }
+}

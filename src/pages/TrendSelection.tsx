@@ -5,9 +5,13 @@ import { CONTAINERS, TRENDS, getContainer } from '../data/technovision2026';
 import { getTechnoVisionTooltips } from '../data/TechnoVisionTooltips';
 import TrendTooltip from '../components/TrendTooltip';
 import { selectQuestions } from '../data/questions';
+import '../styles/trendSelection.css';
 
 const MIN_TRENDS = 3;
 const MAX_TRENDS = 5;
+
+// Base URL prefix so images resolve on any deployment (root or sub-path)
+const IMG_BASE = import.meta.env.BASE_URL;
 
 export default function TrendSelection() {
   const { state, dispatch } = useApp();
@@ -15,6 +19,7 @@ export default function TrendSelection() {
   const [lang] = useLang();
   const [selected, setSelected] = useState<Set<string>>(new Set(state.selectedTrends));
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
+  const [hoveredContainer, setHoveredContainer] = useState<string | null>(null);
 
   const tooltips = getTechnoVisionTooltips(lang);
 
@@ -71,7 +76,7 @@ export default function TrendSelection() {
 
   return (
     <main className="page animate-in" style={{ paddingBottom: 40 }}>
-      {/* Header */}
+      {/* ── Page header ── */}
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 28, fontWeight: 800, color: '#FFFFFF', marginBottom: 8 }}>
           {t.trends.title}
@@ -87,7 +92,7 @@ export default function TrendSelection() {
         </p>
       </div>
 
-      {/* Hand summary bar */}
+      {/* ── Hand summary bar ── */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         background: 'rgba(18,171,219,0.07)', border: '1px solid rgba(18,171,219,0.2)',
@@ -108,7 +113,7 @@ export default function TrendSelection() {
         )}
       </div>
 
-      {/* Selected chips */}
+      {/* ── Selected chips ── */}
       {count > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
           {[...selected].map(id => {
@@ -127,7 +132,7 @@ export default function TrendSelection() {
         </div>
       )}
 
-      {/* Containers grid */}
+      {/* ── Containers grid ── */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
@@ -137,90 +142,140 @@ export default function TrendSelection() {
         {CONTAINERS.map(container => {
           const containerTrends = TRENDS.filter(tr => tr.containerId === container.id);
           const isBalance = container.id === 'balance-by-design';
+          const isHovered = hoveredContainer === container.id;
 
           return (
-            <div key={container.id} className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: container.accentColor, flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', flex: 1 }}>{container.name}</span>
-                {isBalance && (
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, background: 'rgba(18,171,219,0.2)', color: '#12ABDB',
-                    padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.06em',
-                  }}>{t.trends.required}</span>
-                )}
-              </div>
+            <div
+              key={container.id}
+              className="card container-card"
+              style={{
+                padding: 0,
+                borderRadius: 12,
+                borderColor: isHovered
+                  ? `${container.accentColor}55`
+                  : undefined,
+                // Fallback background color (shown if image fails to load)
+                background: container.accentColor + '22',
+              }}
+              onMouseEnter={() => setHoveredContainer(container.id)}
+              onMouseLeave={() => setHoveredContainer(null)}
+            >
+              {/* ── Background image layer ── */}
+              <div
+                className="container-card-bg"
+                aria-hidden
+                style={{
+                  backgroundImage: `url("${IMG_BASE}containers/${container.id}.png")`,
+                  transform: isHovered ? 'scale(1.03)' : 'scale(1)',
+                }}
+              />
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {containerTrends.map(trend => {
-                  const isSelected = selected.has(trend.id);
-                  const isDisabled = !isSelected && count >= MAX_TRENDS;
-                  const hasTooltip = !!tooltips[trend.id];
+              {/* ── Gradient overlay ── */}
+              <div
+                className="container-card-overlay"
+                aria-hidden
+                style={{
+                  background: isHovered
+                    ? 'linear-gradient(135deg, rgba(17,25,55,0.80) 0%, rgba(17,25,55,0.55) 100%)'
+                    : 'linear-gradient(135deg, rgba(17,25,55,0.88) 0%, rgba(17,25,55,0.68) 100%)',
+                }}
+              />
 
-                  return (
-                    <div key={trend.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {/* Trend selection button */}
-                      <button
-                        onClick={() => !isDisabled && toggle(trend.id)}
-                        aria-pressed={isSelected}
-                        style={{
-                          flex: 1,
-                          display: 'flex', alignItems: 'center', gap: 8,
-                          padding: '10px 12px', minHeight: 44,
-                          background: isSelected ? `${container.accentColor}18` : 'rgba(255,255,255,0.04)',
-                          border: isSelected ? `2px solid ${container.accentColor}` : '1px solid rgba(255,255,255,0.1)',
-                          borderRadius: 8, cursor: isDisabled ? 'not-allowed' : 'pointer',
-                          textAlign: 'left', transition: 'all 150ms',
-                          WebkitTapHighlightColor: 'transparent',
-                          opacity: isDisabled ? 0.35 : 1,
-                          color: isSelected ? container.accentColor : 'rgba(255,255,255,0.8)',
-                        }}
-                      >
-                        {isSelected && (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ flexShrink: 0 }}>
-                            <path d="M20 6 9 17l-5-5" />
-                          </svg>
-                        )}
-                        <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3 }}>{trend.name}</span>
-                      </button>
+              {/* ── Content (above image + overlay) ── */}
+              <div style={{ position: 'relative', zIndex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-                      {/* Info button */}
-                      {hasTooltip && (
+                {/* Container header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: container.accentColor, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', flex: 1 }}>{container.name}</span>
+                  {isBalance && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, background: 'rgba(18,171,219,0.25)', color: '#12ABDB',
+                      padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.06em',
+                    }}>{t.trends.required}</span>
+                  )}
+                </div>
+
+                {/* Trend items */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {containerTrends.map(trend => {
+                    const isSelected = selected.has(trend.id);
+                    const isDisabled = !isSelected && count >= MAX_TRENDS;
+                    const hasTooltip = !!tooltips[trend.id];
+
+                    return (
+                      <div key={trend.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {/* Trend selection button */}
                         <button
-                          onClick={() => setOpenTooltip(trend.id)}
-                          aria-label={`${t.trends.infoAriaPrefix} ${trend.name}`}
+                          onClick={() => !isDisabled && toggle(trend.id)}
+                          aria-pressed={isSelected}
                           style={{
-                            flexShrink: 0,
-                            width: 28, height: 28,
-                            borderRadius: '50%',
-                            border: '1px solid rgba(255,255,255,0.18)',
-                            background: 'rgba(255,255,255,0.06)',
-                            color: 'rgba(255,255,255,0.45)',
-                            cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 12, fontWeight: 700, fontStyle: 'italic',
-                            fontFamily: 'Georgia, serif',
-                            transition: 'all 150ms',
+                            flex: 1,
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '10px 12px', minHeight: 44,
+                            background: isSelected
+                              ? `${container.accentColor}30`
+                              : 'rgba(17,25,55,0.45)',
+                            border: isSelected
+                              ? `2px solid ${container.accentColor}`
+                              : '1px solid rgba(255,255,255,0.15)',
+                            borderRadius: 8, cursor: isDisabled ? 'not-allowed' : 'pointer',
+                            textAlign: 'left', transition: 'all 150ms',
                             WebkitTapHighlightColor: 'transparent',
-                            lineHeight: 1,
+                            opacity: isDisabled ? 0.35 : 1,
+                            color: isSelected ? container.accentColor : 'rgba(255,255,255,0.85)',
+                            backdropFilter: 'blur(4px)',
+                            WebkitBackdropFilter: 'blur(4px)',
                           }}
                         >
-                          i
+                          {isSelected && (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ flexShrink: 0 }}>
+                              <path d="M20 6 9 17l-5-5" />
+                            </svg>
+                          )}
+                          <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3 }}>{trend.name}</span>
                         </button>
-                      )}
-                    </div>
-                  );
-                })}
+
+                        {/* Info button */}
+                        {hasTooltip && (
+                          <button
+                            onClick={() => setOpenTooltip(trend.id)}
+                            aria-label={`${t.trends.infoAriaPrefix} ${trend.name}`}
+                            style={{
+                              flexShrink: 0,
+                              width: 28, height: 28,
+                              borderRadius: '50%',
+                              border: '1px solid rgba(255,255,255,0.22)',
+                              background: 'rgba(17,25,55,0.50)',
+                              color: 'rgba(255,255,255,0.55)',
+                              cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 12, fontWeight: 700, fontStyle: 'italic',
+                              fontFamily: 'Georgia, serif',
+                              transition: 'all 150ms',
+                              WebkitTapHighlightColor: 'transparent',
+                              lineHeight: 1,
+                              backdropFilter: 'blur(4px)',
+                              WebkitBackdropFilter: 'blur(4px)',
+                            }}
+                          >
+                            i
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Sticky CTA */}
+      {/* ── Sticky CTA ── */}
       <div style={{
         display: 'flex', flexDirection: 'column', gap: 10,
-        position: 'sticky', bottom: 16,
+        position: 'sticky', bottom: 16, zIndex: 20,
         background: 'linear-gradient(to top, rgba(39,41,54,1) 60%, rgba(39,41,54,0))',
         paddingTop: 24, paddingBottom: 8, marginTop: 'auto',
       }}>
@@ -245,7 +300,7 @@ export default function TrendSelection() {
         )}
       </div>
 
-      {/* Tooltip modal */}
+      {/* ── Tooltip modal ── */}
       {openTooltip && tooltipTrend && (
         <TrendTooltip
           trendId={openTooltip}
